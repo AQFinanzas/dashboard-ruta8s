@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard Ruta 8S</title>
+<style>
+/* Una sola columna, de arriba hacia abajo: tus datos → resultado → camino → costos → detalles */
+:root{
+  --navy:#0B0B5C; --orange:#F04A03; --blue:#2F6FED;
+  --bg:#F4F5FA; --card:#FFFFFF; --ink:#14163A; --muted:#62668A; --line:#E2E4EF; --soft:#EEF0F8;
+  --ok:#1E7B4C; --okbg:#E5F4EC; --warn:#A75A00; --warnbg:#FFF2DF; --bad:#C3282B; --badbg:#FDE8E8;
+  --font:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --serif:Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0E0F26; --card:#171936; --ink:#ECEEFF; --muted:#A4A8C8; --line:#2A2D55; --soft:#20234A;
+  --navy:#C9CCFF; --orange:#FF6A2B; --blue:#6E9BFF;
+  --ok:#5FD39A; --okbg:#173527; --warn:#FFB45C; --warnbg:#3A2A12; --bad:#FF7272; --badbg:#3B1A1D; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:16px}
+h1{font-family:var(--serif);font-weight:400;font-size:1.9rem;margin:0;color:var(--navy)}
+h2{font-size:1.05rem;margin:0 0 4px;color:var(--navy)}
+.hint{color:var(--muted);font-size:.85rem;margin:0 0 14px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.status{font-size:.82rem;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.on{background:var(--ok)} .dot.off{background:var(--warn)}
+select,input,button{font:inherit}
+select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.btn{border:0;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:600}
+.btn.main{background:var(--orange);color:#fff}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.step{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--navy);color:var(--card);font-size:.8rem;font-weight:700;align-items:center;justify-content:center;margin-right:8px}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.field label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:4px}
+.field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#FFFBEA;color:#14163A;font-size:1.05rem;font-variant-numeric:tabular-nums}
+@media (prefers-color-scheme:dark){.field input{background:#2B2A1A;color:var(--ink)}}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.msg{font-size:.85rem;color:var(--muted)}
+.big3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--soft);border-radius:12px;padding:14px}
+.kpi .l{font-size:.8rem;color:var(--muted)}
+.kpi .v{font-family:var(--serif);font-size:1.9rem;line-height:1.15;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:.8rem;color:var(--muted)}
+.verdict{margin-top:12px;padding:12px 14px;border-radius:12px;font-size:.95rem;display:flex;gap:10px;align-items:flex-start}
+.verdict.ok{background:var(--okbg);color:var(--ok)} .verdict.warn{background:var(--warnbg);color:var(--warn)}
+.verdict.bad{background:var(--badbg);color:var(--bad)} .verdict.wait{background:var(--soft);color:var(--muted)}
+.verdict b{font-weight:700}
+.path{display:grid;gap:4px}
+.pstep{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center}
+.pname{font-size:.88rem}
+.pname small{display:block;color:var(--muted);font-size:.75rem}
+.track{height:30px;background:var(--soft);border-radius:8px;position:relative;overflow:hidden}
+.fill{position:absolute;inset:0 auto 0 0;background:var(--orange);border-radius:8px;min-width:4px;transition:width .4s}
+.pnum{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-weight:700;font-variant-numeric:tabular-nums;font-size:.9rem}
+.pass{grid-column:2;font-size:.8rem;color:var(--muted);padding:2px 0 6px}
+.pass.worst{color:var(--bad);font-weight:600}
+.costs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.cost{border:1px solid var(--line);border-radius:12px;padding:12px}
+.cost .l{font-size:.8rem;color:var(--muted)} .cost .v{font-size:1.25rem;font-weight:700;font-variant-numeric:tabular-nums}
+details.card summary{cursor:pointer;font-weight:700;color:var(--navy);list-style:none}
+details.card summary::before{content:"▸ ";}
+details[open].card summary::before{content:"▾ ";}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:14px}
+.mini h3{font-size:.9rem;margin:0 0 8px}
+.mrow{display:grid;grid-template-columns:110px 1fr 42px;gap:8px;align-items:center;font-size:.82rem;margin-bottom:6px}
+.mbar{height:12px;background:var(--soft);border-radius:6px;overflow:hidden}
+.mbar i{display:block;height:100%;background:var(--blue);border-radius:6px}
+.mrow .n{text-align:right;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:.82rem}
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.83rem;font-variant-numeric:tabular-nums}
+th{text-align:left;color:var(--muted);font-weight:600;padding:6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.n,th.n{text-align:right}
+.pill{font-size:.75rem;padding:2px 8px;border-radius:999px}
+.pill.on{background:var(--okbg);color:var(--ok)} .pill.off{background:var(--soft);color:var(--muted)}
+.banner{border-radius:12px;padding:10px 14px;font-size:.88rem;background:var(--warnbg);color:var(--warn)}
+.foot{font-size:.78rem;color:var(--muted);text-align:center}
+@media (max-width:480px){.pstep{grid-template-columns:110px 1fr}.mrow{grid-template-columns:90px 1fr 36px}}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <h1>Mi lanzamiento</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="estado">Conectando con el Sheet…</span>
+      <button class="btn ghost" id="recargar" type="button">Actualizar</button></div>
+  </div>
+  <div class="row" style="margin:0">
+    <label for="sel" class="msg">Clase del:</label>
+    <select id="sel"></select>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+
+  <section class="card">
+    <h2><span class="step">1</span>Tus datos de Meta</h2>
+    <p class="hint">Solo estos 3 los escribes tú (del Administrador de anuncios y de la comunidad). Todo lo demás llega solo.</p>
+    <div class="inputs">
+      <div class="field"><label for="inv">Inversión en anuncios (US$)</label><input id="inv" inputmode="decimal" placeholder="0"></div>
+      <div class="field"><label for="leads">Leads del formulario</label><input id="leads" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label for="com">Personas en la comunidad</label><input id="com" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <div class="row"><button class="btn main" id="guardar" type="button">Guardar en el Sheet</button><span class="msg" id="gmsg">Los números se recalculan apenas escribes.</span></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">2</span>¿Cómo me fue?</h2>
+    <p class="hint">Ventas aprobadas × US$ 97, comparado con lo invertido.</p>
+    <div class="big3">
+      <div class="kpi"><div class="l">Ventas aprobadas</div><div class="v" id="kVentas">—</div><div class="s" id="kIng">—</div></div>
+      <div class="kpi"><div class="l">Ganancia (ingresos − anuncios)</div><div class="v" id="kGan">—</div><div class="s" id="kRoas">—</div></div>
+      <div class="kpi"><div class="l">De los que vieron la clase, compró</div><div class="v" id="kConv">—</div><div class="s">Meta: entre 8 y 10%</div></div>
+    </div>
+    <div class="verdict wait" id="verdict">—</div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">3</span>El camino de la gente</h2>
+    <p class="hint">Cuántas personas llegan a cada paso. En rojo, donde más se pierden.</p>
+    <div class="path" id="path"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="step">4</span>¿Cuánto me cuesta cada persona?</h2>
+    <p class="hint">Lo invertido en anuncios dividido entre las personas de cada paso.</p>
+    <div class="costs" id="costs"></div>
+  </section>
+
+  <details class="card" id="mas">
+    <summary>Más detalles: pagos, minuto de entrada y correos</summary>
+    <div class="grid2">
+      <div class="mini"><h3>Pagos por método</h3><div id="dMetodo"></div></div>
+      <div class="mini"><h3>Pagos por país</h3><div id="dPais"></div></div>
+      <div class="mini"><h3>Minuto en que entraron a la clase</h3><div id="dMin"></div></div>
+    </div>
+    <h3 style="font-size:.9rem;margin:18px 0 8px">Correos programados</h3>
+    <div class="tscroll"><table><thead><tr><th>Correo</th><th>Cuándo</th><th>Activo</th><th class="n">Enviados</th></tr></thead><tbody id="dCorreos"></tbody></table></div>
+  </details>
+
+  <details class="card">
+    <summary>Comparar todos los lanzamientos</summary>
+    <div class="tscroll" style="margin-top:12px"><table>
+      <thead><tr><th>Clase</th><th class="n">Anuncios</th><th class="n">Comunidad</th><th class="n">Registrados</th><th class="n">Vieron</th><th class="n">Ventas</th><th class="n">Compró</th><th class="n">Ganancia</th></tr></thead>
+      <tbody id="tComp"></tbody></table></div>
+  </details>
+
+  <p class="foot">Excedente · Ruta Excedente 8S · los datos de registros, asistencia, pagos y correos salen del Sheet "Registros Clase 200K" y de "Pagos Excedente".</p>
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbwdsqAvt7qFhJuZEwRt924vOOiC7yQlxNDVxgj-CXKDgUcn3w_CnQz9Kvg_LIl-1lwdng/exec";
+const CLAVE = "ruta8s-dash";
+
+// Ejemplo (solo si no hay conexión con el Sheet)
+const EJEMPLO = {precio:97, actualizado:"ejemplo", lanzamientos:[{
+  fecha:"Ejemplo", inversion:800, leads:2800, comunidad:1100, registrados:650, asistieron:260, pagos:27, ventas:24,
+  metodo:[{etiqueta:"Binance",n:11},{etiqueta:"Zelle",n:7},{etiqueta:"PayPal",n:5},{etiqueta:"Transferencia COL",n:4}],
+  pais:[{etiqueta:"Venezuela",n:18},{etiqueta:"Colombia",n:6},{etiqueta:"Otros",n:3}],
+  minuto:[{etiqueta:"Minuto 0–5",n:170},{etiqueta:"Minuto 6–15",n:52},{etiqueta:"Minuto 16–30",n:26},{etiqueta:"Después del 30",n:12}],
+  correos:[{id:"JUE-0900",fecha:"2026-10-15",hora:"09:00",activo:"Sí",enviados:650},{id:"JUE-1830",fecha:"2026-10-15",hora:"18:30",activo:"Sí",enviados:650},
+           {id:"VIE-0900",fecha:"2026-10-16",hora:"09:00",activo:"Sí",enviados:626},{id:"VIE-2105",fecha:"2026-10-16",hora:"21:05",activo:"Sí",enviados:623}]
+}]};
+
+const $ = id => document.getElementById(id);
+const nf = new Intl.NumberFormat("es-CO");
+const usd = v => v==null||!isFinite(v) ? "—" : "US$ " + new Intl.NumberFormat("es-CO",{minimumFractionDigits: Math.abs(v)<100?2:0, maximumFractionDigits: Math.abs(v)<100?2:0}).format(v);
+const pct = v => v==null||!isFinite(v) ? "—" : new Intl.NumberFormat("es-CO",{style:"percent",maximumFractionDigits:1}).format(v);
+const div = (a,b) => b>0 ? a/b : null;
+const num = v => { let s = String(v ?? "").trim().replace(/[^\d.,]/g,"");
+  if (s.includes(",")) s = s.replace(/\./g,"").replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,"");
+  const x = Number(s); return isFinite(x) ? x : 0; };
+const fechaBonita = f => /^\d{4}-\d{2}-\d{2}$/.test(f) ? new Date(f+"T12:00:00").toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"}) : f;
+
+let DATA = null, cur = null, enVivo = false;
+
+async function cargar(){
+  $("estado").textContent = "Conectando con el Sheet…"; $("dot").className = "dot";
+  try{
+    const r = await fetch(API + "?dash=datos&t=" + Date.now());
+    const j = await r.json();
+    if(!j.ok || !j.lanzamientos || !j.lanzamientos.length) throw new Error(j.error || "sin lanzamientos");
+    DATA = j; enVivo = true;
+    $("estado").textContent = "Conectado al Sheet · " + j.actualizado; $("dot").className = "dot on";
+    $("banner").hidden = true;
+  }catch(e){
+    DATA = JSON.parse(JSON.stringify(EJEMPLO)); enVivo = false;
+    $("estado").textContent = "Sin conexión: mostrando un ejemplo"; $("dot").className = "dot off";
+    $("banner").hidden = false;
+    $("banner").textContent = "No pude leer el Sheet, así que ves datos de ejemplo. Revisa tu internet y toca Actualizar.";
+  }
+  const prev = cur && cur.fecha;
+  const sel = $("sel"); sel.replaceChildren();
+  DATA.lanzamientos.forEach((l,i) => sel.append(new Option(fechaBonita(l.fecha), i)));
+  let idx = DATA.lanzamientos.findIndex(l => l.fecha === prev);
+  if(idx < 0) idx = DATA.lanzamientos.length - 1;
+  sel.value = idx; elegir(idx);
+}
+
+function elegir(i){
+  cur = DATA.lanzamientos[i];
+  $("inv").value = cur.inversion || ""; $("leads").value = cur.leads || ""; $("com").value = cur.comunidad || "";
+  $("guardar").disabled = !enVivo;
+  $("gmsg").textContent = enVivo ? "Los números se recalculan apenas escribes." : "Para guardar necesitas conexión con el Sheet.";
+  pintar();
+}
+
+function pintar(){
+  const L = Object.assign({}, cur, {inversion:num($("inv").value), leads:num($("leads").value), comunidad:num($("com").value)});
+  const precio = DATA.precio || 97, ingresos = L.ventas * precio, gan = ingresos - L.inversion, roas = div(ingresos, L.inversion);
+  const conv = div(L.ventas, L.asistieron);
+
+  $("kVentas").textContent = nf.format(L.ventas);
+  $("kIng").textContent = "Ingresos " + usd(ingresos);
+  $("kGan").textContent = usd(gan); $("kGan").style.color = gan<0 ? "var(--bad)" : "";
+  $("kRoas").textContent = roas==null ? "Escribe la inversión para calcular" : "Por cada US$ 1 en anuncios volvieron " + usd(roas);
+  $("kConv").textContent = pct(conv);
+
+  const v = $("verdict");
+  if(!L.asistieron){ v.className="verdict wait"; v.textContent = "Todavía no hay asistentes a la clase. Esto se llena solo cuando empiece la clase y el viernes con las ventas."; }
+  else if(conv >= .08){ v.className="verdict ok"; v.innerHTML = "✅ <span><b>Muy bien.</b> Compró el " + pct(conv) + " de los que vieron la clase (meta: 8 a 10%).</span>"; }
+  else if(conv >= .05){ v.className="verdict warn"; v.innerHTML = "⚠️ <span><b>Cerca.</b> Compró el " + pct(conv) + " de los que vieron la clase. La meta es 8 a 10%.</span>"; }
+  else { v.className="verdict bad"; v.innerHTML = "🔻 <span><b>Por debajo.</b> Compró el " + pct(conv) + " de los que vieron la clase. La meta es 8 a 10%.</span>"; }
+
+  // Camino
+  const pasos = [["Leads del formulario","leads","dejaron sus datos"],["Comunidad WhatsApp","comunidad","entraron al grupo"],
+    ["Se registraron","registrados","en la landing"],["Vieron la clase","asistieron","entraron a la clase"],["Compraron","ventas","pago aprobado"]];
+  const top = Math.max(...pasos.map(p => L[p[1]]), 1);
+  let peor = -1, peorTasa = 2;
+  pasos.forEach((p,i) => { if(i){ const t = div(L[p[1]], L[pasos[i-1][1]]); if(t!=null && L[p[1]]>0 && t<peorTasa){peorTasa=t; peor=i;} } });
+  const path = $("path"); path.replaceChildren();
+  pasos.forEach((p,i) => {
+    if(i){
+      const t = div(L[p[1]], L[pasos[i-1][1]]);
+      const d = document.createElement("div"); d.className = "pstep";
+      const s = document.createElement("div"); s.className = "pass" + (i===peor ? " worst" : "");
+      s.textContent = (!L[p[1]] || t==null) ? "↓ aún sin datos" : "↓ de cada 100, siguen " + Math.round(t*100) + (i===peor ? " · aquí se pierde más gente" : "");
+      d.append(document.createElement("span"), s); path.append(d);
+    }
+    const r = document.createElement("div"); r.className = "pstep";
+    const n = document.createElement("div"); n.className = "pname"; n.textContent = p[0];
+    const sm = document.createElement("small"); sm.textContent = p[2]; n.append(sm);
+    const tr = document.createElement("div"); tr.className = "track";
+    const f = document.createElement("div"); f.className = "fill"; f.style.width = (L[p[1]]/top*100) + "%";
+    const k = document.createElement("span"); k.className = "pnum"; k.textContent = nf.format(L[p[1]]);
+    tr.append(f,k); r.append(n,tr); path.append(r);
+  });
+
+  // Costos
+  const costos = [["Por lead","leads"],["Por miembro","comunidad"],["Por registrado","registrados"],["Por asistente","asistieron"],["Por venta","ventas"]];
+  $("costs").replaceChildren(...costos.map(([t,k]) => {
+    const c = document.createElement("div"); c.className = "cost";
+    const l = document.createElement("div"); l.className = "l"; l.textContent = t;
+    const x = document.createElement("div"); x.className = "v"; x.textContent = usd(div(L.inversion, L[k]));
+    c.append(l,x); return c;
+  }));
+
+  // Detalles
+  const minis = (id, arr) => {
+    const box = $(id); box.replaceChildren();
+    if(!arr || !arr.length || !arr.some(a => a.n)){ const p = document.createElement("div"); p.className="empty"; p.textContent="Aún sin datos."; box.append(p); return; }
+    const mx = Math.max(...arr.map(a => a.n), 1);
+    arr.forEach(a => {
+      const r = document.createElement("div"); r.className = "mrow";
+      const t = document.createElement("span"); t.textContent = a.etiqueta;
+      const b = document.createElement("div"); b.className = "mbar"; const i = document.createElement("i"); i.style.width = (a.n/mx*100)+"%"; b.append(i);
+      const n = document.createElement("span"); n.className = "n"; n.textContent = nf.format(a.n);
+      r.append(t,b,n); box.append(r);
+    });
+  };
+  minis("dMetodo", L.metodo); minis("dPais", L.pais); minis("dMin", L.minuto);
+  const tb = $("dCorreos"); tb.replaceChildren();
+  (L.correos||[]).forEach(c => {
+    const tr = document.createElement("tr");
+    const td = (t,cl) => { const e = document.createElement("td"); if(cl) e.className = cl; e.textContent = t; return e; };
+    const a = document.createElement("td"); const p = document.createElement("span"); const on = /^s/i.test(c.activo);
+    p.className = "pill " + (on?"on":"off"); p.textContent = on ? "Sí" : "No"; a.append(p);
+    tr.append(td(c.id), td(fechaBonita(c.fecha).replace(/ de \d{4}$/,"") + " · " + c.hora), a, td(nf.format(c.enviados),"n"));
+    tb.append(tr);
+  });
+  if(!(L.correos||[]).length){ const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=4; td.className="empty"; td.textContent="Sin correos para esta fecha."; tr.append(td); tb.append(tr); }
+
+  // Comparar
+  $("tComp").replaceChildren(...DATA.lanzamientos.map(x => {
+    const y = x===cur ? L : x; const tr = document.createElement("tr");
+    const td = (t,cl) => { const e = document.createElement("td"); if(cl) e.className = cl; e.textContent = t; return e; };
+    tr.append(td(fechaBonita(y.fecha)), td(usd(y.inversion),"n"), td(nf.format(y.comunidad),"n"), td(nf.format(y.registrados),"n"),
+      td(nf.format(y.asistieron),"n"), td(nf.format(y.ventas),"n"), td(pct(div(y.ventas,y.asistieron)),"n"), td(usd(y.ventas*(DATA.precio||97)-y.inversion),"n"));
+    return tr;
+  }));
+}
+
+async function guardar(){
+  if(!enVivo || !/^\d{4}-\d{2}-\d{2}$/.test(cur.fecha)) return;
+  const b = $("guardar"); b.disabled = true; $("gmsg").textContent = "Guardando…";
+  const q = new URLSearchParams({dash:"guardar", clave:CLAVE, fecha:cur.fecha, inversion:num($("inv").value), leads:num($("leads").value), comunidad:num($("com").value)});
+  try{
+    const r = await fetch(API + "?" + q.toString()); const j = await r.json();
+    if(!j.ok) throw new Error(j.error);
+    cur.inversion = num($("inv").value); cur.leads = num($("leads").value); cur.comunidad = num($("com").value);
+    $("gmsg").textContent = "✅ Guardado en el Sheet.";
+  }catch(e){ $("gmsg").textContent = "No se pudo guardar: " + (e.message || "sin conexión") + ". Intenta de nuevo."; }
+  b.disabled = false;
+}
+
+["inv","leads","com"].forEach(id => $(id).addEventListener("input", pintar));
+$("sel").addEventListener("change", e => elegir(Number(e.target.value)));
+$("recargar").addEventListener("click", cargar);
+$("guardar").addEventListener("click", guardar);
+cargar();
+</script>
+</body>
+</html>
